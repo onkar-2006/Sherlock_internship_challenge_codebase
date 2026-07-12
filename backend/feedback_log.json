@@ -1,0 +1,46 @@
+[
+  {
+    "timestamp": 1783845363.988064,
+    "session_id": "interview_session_1",
+    "history": [
+      {
+        "participant_id": "usr_0fuqbox4x_mrhj125k",
+        "role": "interviewer",
+        "display_name": "Alice Smith",
+        "text": "can you introduce yourself"
+      }
+    ],
+    "participants": {
+      "usr_u0jm7nv27_mrhjbp9o": {
+        "participant_id": "usr_u0jm7nv27_mrhjbp9o",
+        "role": "candidate",
+        "display_name": "MacBook Pro",
+        "speaking_duration": 0.0,
+        "webcam": true,
+        "screen_sharing": false
+      },
+      "usr_0fuqbox4x_mrhj125k": {
+        "participant_id": "usr_0fuqbox4x_mrhj125k",
+        "role": "interviewer",
+        "display_name": "Alice Smith",
+        "speaking_duration": 0.0,
+        "webcam": true,
+        "screen_sharing": false
+      }
+    },
+    "confirmed_candidate_id": "usr_u0jm7nv27_mrhjbp9o",
+    "metadata": {
+      "scheduled_candidate": "John Doe",
+      "candidate_email": "john.doe@example.com",
+      "calendar_invite": "Sherlock AI Technical Interview - John Doe",
+      "interview_schedule": "12:00 PM - 1:00 PM",
+      "interviewers": [
+        "Alice Smith"
+      ],
+      "observers": [
+        "Shadow Recruiter",
+        "Dev Observer"
+      ]
+    }
+  }
+]
