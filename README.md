@@ -90,27 +90,33 @@ To ensure robust results, Sherlock fuses **5 distinct weak signals**:
 
 ---
 
-## 3. Setup & Running Instructions
+## 3. Clone & Running Instructions (For Reviewers)
+
+### Clone the Repository
+```bash
+git clone https://github.com/onkar-2006/Sherlock_internship_challenge_codebase.git
+cd Sherlock_internship_challenge_codebase
+```
 
 ### Backend Setup
-1. Install Python 3.10+
-2. Install dependencies:
+1. Navigate to the backend directory and install dependencies:
    ```bash
+   cd backend
    pip install fastapi uvicorn langchain-google-genai rapidfuzz
    ```
-3. Run the FastAPI server:
+2. Run the FastAPI server:
    ```bash
    python main.py
    ```
    *(Running on `http://127.0.0.1:8000`)*
 
 ### Frontend Setup
-1. Install Node.js
-2. Install npm dependencies:
+1. Open a new terminal window, navigate to the frontend directory, and install dependencies:
    ```bash
+   cd frontend
    npm install
    ```
-3. Start the dev server:
+2. Start the Vite React development server:
    ```bash
    npm run dev
    ```
