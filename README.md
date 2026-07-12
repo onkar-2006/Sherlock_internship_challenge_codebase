@@ -12,19 +12,19 @@ The flowchart below represents how raw meeting signals are processed, weighted b
 graph TD
     %% Input Layer
     subgraph Inputs ["1. Raw Call Inputs"]
-        A[Webcam Feed]
-        B[Mic Audio / Speech]
-        C[Display Names]
-        D[Scheduled Invite Metadata]
+        A["Webcam Feed"]
+        B["Mic Audio / Speech"]
+        C["Display Names"]
+        D["Scheduled Invite Metadata"]
     end
 
     %% Signal Processing Nodes
     subgraph Processing ["2. Signal Extraction Nodes"]
-        E[Gemini Vision Matcher]
-        F[Acoustic Liveness & Lip-Sync]
-        G[Fuzzy Jaro-Winkler Compare]
-        H[Speaking Duration Clock]
-        I[Gemini Dialogue Semantic Audit]
+        E["Gemini Vision Matcher"]
+        F["Acoustic Liveness & Lip-Sync"]
+        G["Fuzzy Jaro-Winkler Compare"]
+        H["Speaking Duration Clock"]
+        I["Gemini Dialogue Semantic Audit"]
     end
 
     %% Mapping inputs to processing
@@ -36,17 +36,17 @@ graph TD
 
     %% Fuser Node with Weights
     subgraph Fusion ["3. Agentic Fuser Graph (fuse_signals)"]
-        Fuser{Weights & Rules Fuser}
-        W1[Face Match Weight: 25%]
-        W2[Vocal Liveness & Lip-Sync: 20%]
-        W3[Name Match Weight: 25%]
-        W4[Dialogue Context Weight: 20%]
-        W5[Speaking Duration Weight: 10%]
+        Fuser{"Weights & Rules Fuser"}
+        W1["Face Match Weight: 25%"]
+        W2["Vocal Liveness & Lip-Sync: 20%"]
+        W3["Name Match Weight: 25%"]
+        W4["Dialogue Context Weight: 20%"]
+        W5["Speaking Duration Weight: 10%"]
         
         %% Offsets
-        W6[Screen Share Boost: +15]
-        W7[Interviewer Penalty: -30]
-        W8[Camera Off Penalty: -10]
+        W6["Screen Share Boost: +15"]
+        W7["Interviewer Penalty: -30"]
+        W8["Camera Off Penalty: -10"]
     end
 
     %% Mapping processing to weights
@@ -60,10 +60,10 @@ graph TD
 
     %% Output layer
     subgraph Outputs ["4. Final Verification Dashboard"]
-        Out1[Verified Candidate ID & Role]
-        Out2[AI Confidence Score %]
-        Out3[Signal Reason Rationales]
-        Out4[Anomaly Fraud Alerts]
+        Out1["Verified Candidate ID & Role"]
+        Out2["AI Confidence Score %"]
+        Out3["Signal Reason Rationales"]
+        Out4["Anomaly Fraud Alerts"]
     end
 
     Fuser --> Out1 & Out2 & Out3 & Out4
