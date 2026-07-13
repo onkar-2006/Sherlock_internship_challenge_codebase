@@ -1,7 +1,7 @@
 import base64
 import os
 
-API_KEY = "AIzaSyCimUTbrLe7aoOkkbMehLgYODizSUaEXFQ"
+API_KEY = os.environ.get("GEMINI_API_KEY")
 
 # Load scheduled candidate baseline profile picture
 BASELINE_CANDIDATE_PHOTO = ""

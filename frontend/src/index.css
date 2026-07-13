@@ -537,6 +537,7 @@ body {
   box-shadow: var(--shadow);
   height: 100%;
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .insights-sidebar h2 {

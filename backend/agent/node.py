@@ -5,7 +5,8 @@ from rapidfuzz import fuzz
 from agent.state import AgentState
 from agent.prompt import ANALYZER_SYSTEM_PROMPT
 
-API_KEY = "AIzaSyCimUTbrLe7aoOkkbMehLgYODizSUaEXFQ"
+import os
+API_KEY = os.environ.get("GEMINI_API_KEY")
 
 def extract_metadata_signals(state: AgentState) -> dict:
     """Algorithmic node: extracts name similarity matching, webcam, and screenshare signals."""

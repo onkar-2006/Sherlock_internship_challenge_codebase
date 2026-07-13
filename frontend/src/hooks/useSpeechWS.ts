@@ -9,7 +9,6 @@ interface UseSpeechWSProps {
 
 export function useSpeechWS({ role, displayName, onMessage, isJoined = true }: UseSpeechWSProps) {
   const [status, setStatus] = useState<'disconnected' | 'connected' | 'recording'>('disconnected');
-  const [volume, setVolume] = useState<number>(0);
   const [interimText, setInterimText] = useState<string>('');
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -114,7 +113,12 @@ export function useSpeechWS({ role, displayName, onMessage, isJoined = true }: U
           }
           const average = sum / bufferLength;
           const normalized = Math.min(Math.round((average / 128) * 100), 100);
-          setVolume(normalized);
+          
+          // Direct DOM update to avoid React re-renders at 60fps
+          const bar = document.getElementById(`volume-bar-fill-${participantId}`);
+          if (bar) {
+            bar.style.width = `${normalized}%`;
+          }
           requestAnimationFrame(checkVolume);
         }
       };
@@ -191,8 +195,13 @@ export function useSpeechWS({ role, displayName, onMessage, isJoined = true }: U
 
   const stopRecording = () => {
     setStatus('connected');
-    setVolume(0);
     setInterimText('');
+    
+    // Clear volume bar DOM style immediately
+    const bar = document.getElementById(`volume-bar-fill-${participantId}`);
+    if (bar) {
+      bar.style.width = '0%';
+    }
     
     if (recognitionRef.current) {
       recognitionRef.current.onend = null;
@@ -218,7 +227,6 @@ export function useSpeechWS({ role, displayName, onMessage, isJoined = true }: U
   return {
     participantId,
     status,
-    volume,
     interimText,
     setInterimText,
     startRecording,

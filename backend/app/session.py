@@ -30,6 +30,7 @@ class InterviewSession:
         self.speech_start_times: Dict[str, float] = {}
         # Maps participant_id -> Participant metadata dict
         self.participants: Dict[str, Dict[str, Any]] = {}
+        self.is_analyzing: bool = False  # Lock to prevent overlapping API calls
         self.latest_analysis: Dict[str, Any] = {
             "identified_candidate_role": "candidate",
             "identified_candidate_id": "",
@@ -145,7 +146,11 @@ class InterviewSession:
 
     async def run_agent_analysis(self):
         """Runs the LangGraph agent asynchronously to analyze the transcript across all participants."""
+        if self.is_analyzing:
+            return self.latest_analysis
+            
         try:
+            self.is_analyzing = True
             result = await run_transcript_analysis_async(
                 transcript=self.conversation_history,
                 participants=self.participants,
@@ -163,6 +168,9 @@ class InterviewSession:
                 "face_match_score": 0,
                 "face_match_explanation": f"Workflow exception: {e}"
             }
+        finally:
+            self.is_analyzing = False
+            
         return self.latest_analysis
 
 session = InterviewSession()

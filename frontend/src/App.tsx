@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Header } from './components/Header';
 import { Panel } from './components/Panel';
 import { Insights } from './components/Insights';
@@ -35,6 +35,21 @@ export default function App() {
   // Maps participant_id -> live interim text string
   const [interimTexts, setInterimTexts] = useState<Record<string, string>>({});
 
+  // Ref to hold the latest interim text values to avoid closure state issues
+  const latestInterimRef = useRef<Record<string, string>>({});
+  const throttleTimeoutRef = useRef<any>(null);
+
+  const throttleInterimUpdate = (participantId: string, text: string) => {
+    latestInterimRef.current[participantId] = text;
+    
+    if (!throttleTimeoutRef.current) {
+      throttleTimeoutRef.current = setTimeout(() => {
+        setInterimTexts({ ...latestInterimRef.current });
+        throttleTimeoutRef.current = null;
+      }, 150); // Flush updates every 150ms max
+    }
+  };
+
   // Central WebSocket event distributor
   const handleWebSocketMessage = (data: any) => {
     if (data.type === 'session_init') {
@@ -43,14 +58,12 @@ export default function App() {
       setAnalysis(data.analysis);
       setMetadata(data.metadata);
     } else if (data.type === 'interim_update') {
-      setInterimTexts(prev => ({
-        ...prev,
-        [data.participant_id]: data.text
-      }));
+      throttleInterimUpdate(data.participant_id, data.text);
     } else if (data.type === 'update') {
       setTranscripts(data.history);
       setParticipants(data.participants);
       setAnalysis(data.analysis);
+      latestInterimRef.current = {};
       setInterimTexts({});
     } else if (data.type === 'metrics_update') {
       setParticipants(data.participants);
@@ -59,6 +72,7 @@ export default function App() {
       setTranscripts([]);
       setParticipants(data.participants);
       setAnalysis(data.analysis);
+      latestInterimRef.current = {};
       setInterimTexts({});
       setConfirmedCandidateId('');
     } else if (data.type === 'feedback_logged') {
@@ -248,7 +262,6 @@ export default function App() {
                     participant={p}
                     isSelf={isSelf}
                     status={socket.status}
-                    volume={socket.volume}
                     interimText={interimTexts[p.participant_id] || ''}
                     startRecording={socket.startRecording}
                     stopRecording={socket.stopRecording}

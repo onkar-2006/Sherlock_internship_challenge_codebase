@@ -81,12 +81,23 @@ async def websocket_endpoint(websocket: WebSocket):
                 image_data = data.get("image", "")
                 if image_data:
                     session.update_frame(participant_id, image_data)
-                    analysis = await session.run_agent_analysis()
+                    # Broadcast frame update immediately to frontend so video element updates instantly
                     await session.broadcast({
                         "type": "metrics_update",
                         "participants": session.participants,
-                        "analysis": analysis
+                        "analysis": session.latest_analysis
                     })
+                    
+                    # Offload expensive agent vision analysis to non-blocking background thread task
+                    async def run_bg_frame_analysis():
+                        analysis = await session.run_agent_analysis()
+                        await session.broadcast({
+                            "type": "metrics_update",
+                            "participants": session.participants,
+                            "analysis": analysis
+                        })
+                    
+                    asyncio.create_task(run_bg_frame_analysis())
                 continue
 
             text = data.get("text", "").strip()

@@ -6,7 +6,6 @@ interface PanelProps {
   participant: Participant;
   isSelf: boolean;
   status: 'disconnected' | 'connected' | 'recording';
-  volume: number;
   interimText: string;
   startRecording: () => void;
   stopRecording: () => void;
@@ -20,7 +19,6 @@ export function Panel({
   participant,
   isSelf,
   status,
-  volume,
   interimText,
   startRecording,
   stopRecording,
@@ -45,7 +43,7 @@ export function Panel({
 
   // Setup webcam stream for local preview
   useEffect(() => {
-    if (isSelf && webcam !== false) {
+    if (isSelf && webcam !== false && role !== 'interviewer') {
       navigator.mediaDevices.getUserMedia({ video: { width: 240, height: 180 } })
         .then(stream => {
           if (localStreamRef.current) {
@@ -72,7 +70,7 @@ export function Panel({
         localStreamRef.current = null;
       }
     };
-  }, [webcam, isSelf]);
+  }, [webcam, isSelf, role]);
 
   // Periodic capture interval of webcam frames to stream over WS
   useEffect(() => {
@@ -149,7 +147,7 @@ export function Panel({
       </div>
 
       {/* Webcam Preview / Stream image */}
-      {webcam !== false && (
+      {webcam !== false && role !== 'interviewer' && (
         <div className="webcam-preview-container" style={{ padding: '0 16px', marginBottom: '8px' }}>
           {isSelf ? (
             <video 
@@ -213,13 +211,15 @@ export function Panel({
             </button>
           )}
 
-          <button 
-            className={`btn ${webcam === false ? 'btn-danger' : ''}`}
-            onClick={() => onStatusChange(!webcam, participant.screen_sharing)}
-          >
-            {webcam !== false ? <Video size={16} /> : <VideoOff size={16} />}
-            {webcam !== false ? 'Camera ON' : 'Camera OFF'}
-          </button>
+          {role !== 'interviewer' && (
+            <button 
+              className={`btn ${webcam === false ? 'btn-danger' : ''}`}
+              onClick={() => onStatusChange(!webcam, participant.screen_sharing)}
+            >
+              {webcam !== false ? <Video size={16} /> : <VideoOff size={16} />}
+              {webcam !== false ? 'Camera ON' : 'Camera OFF'}
+            </button>
+          )}
 
           <button 
             className={`btn ${participant.screen_sharing ? 'btn-primary' : ''}`}
@@ -234,8 +234,9 @@ export function Panel({
               <span className="volume-label">Mic Activity:</span>
               <div className="volume-bar-bg">
                 <div 
+                  id={`volume-bar-fill-${participant.participant_id}`}
                   className={`volume-bar-fill ${role}`} 
-                  style={{ width: `${volume}%` }}
+                  style={{ width: '0%' }}
                 ></div>
               </div>
             </div>
@@ -249,12 +250,14 @@ export function Panel({
           <span className="metric-label">Speaking Duration:</span>
           <span className="metric-val">{participant.speaking_duration.toFixed(1)}s</span>
         </div>
-        <div className="metric-item">
-          <span className="metric-label">Webcam:</span>
-          <span className={`metric-val ${webcam !== false ? 'text-green' : 'text-danger'}`}>
-            {webcam !== false ? 'Active' : 'Disabled'}
-          </span>
-        </div>
+        {role !== 'interviewer' && (
+          <div className="metric-item">
+            <span className="metric-label">Webcam:</span>
+            <span className={`metric-val ${webcam !== false ? 'text-green' : 'text-danger'}`}>
+              {webcam !== false ? 'Active' : 'Disabled'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Live Transcript Logs */}
