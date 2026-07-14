@@ -45,10 +45,18 @@ class InterviewSession:
         self.active_connections[participant_id] = websocket
         
         # If the participant connects for the first time, register them
+        assigned_role = role
+        if role == "participant":
+            name_lower = name.lower() if name else ""
+            if "observer" in name_lower or "recruiter" in name_lower:
+                assigned_role = "observer"
+            else:
+                assigned_role = "participant"
+
         if participant_id not in self.participants:
             self.participants[participant_id] = {
                 "participant_id": participant_id,
-                "role": role,
+                "role": assigned_role,
                 "display_name": name or f"User {participant_id[:4]}",
                 "speaking_duration": 0.0,
                 "webcam": True,
@@ -59,7 +67,7 @@ class InterviewSession:
             # Reconnection: update active socket & display name if passed
             if name:
                 self.participants[participant_id]["display_name"] = name
-            self.participants[participant_id]["role"] = role
+            self.participants[participant_id]["role"] = assigned_role
 
         # Send current session state to the newly connected user
         await websocket.send_json({
@@ -159,6 +167,18 @@ class InterviewSession:
                 external_metadata=EXTERNAL_METADATA,
                 session_id=self.session_id
             )
+            
+            # Automatically update participant roles in-memory based on AI agent identification
+            predicted_id = result.get("identified_candidate_id", "")
+            if predicted_id:
+                for p_id in list(self.participants.keys()):
+                    if self.participants[p_id].get("role") == "observer":
+                        continue
+                    if p_id == predicted_id:
+                        self.participants[p_id]["role"] = "candidate"
+                    else:
+                        self.participants[p_id]["role"] = "interviewer"
+                        
             self.latest_analysis = result
         except Exception as e:
             print(f"Error executing LangGraph workflow: {e}")

@@ -1,6 +1,6 @@
 export interface Participant {
   participant_id: string;
-  role: 'interviewer' | 'candidate' | 'observer';
+  role: 'interviewer' | 'candidate' | 'observer' | 'participant';
   display_name: string;
   speaking_duration: number;
   webcam: boolean;

@@ -57,38 +57,10 @@ def extract_metadata_signals(state: AgentState) -> dict:
     }
 
 async def llm_dialogue_analysis(state: AgentState) -> dict:
-    """Async LLM node: Analyzes dialogue context and compares webcam frames using Gemini Vision."""
+    """Async LLM node: Analyzes dialogue context and compares webcam frames locally using DeepFace SFace model."""
     transcript = state.get("transcript", [])
     metadata = state.get("external_metadata", {})
     participants = state.get("participants", {})
-    
-    # If transcript is empty, return early
-    if not transcript:
-        return {
-            "signals": {**state.get("signals", {}), "dialogue_analysis": {
-                "suspected_candidate_role": "candidate",
-                "dialogue_signal_strength": 50,
-                "analysis": "No dialogue transcribed yet.",
-                "face_match_score": 0,
-                "face_match_explanation": "Awaiting dialogue stream."
-            }},
-            "analysis_history": ["No transcript dialogue analyzed yet (empty transcript)."]
-        }
-
-    # Format transcript text showing name and role
-    transcript_text = ""
-    for msg in transcript:
-        name = msg.get("display_name", "Unknown")
-        role = msg.get("role", "unknown").upper()
-        text = msg.get("text", "")
-        transcript_text += f"{name} ({role}): {text}\n"
-
-    # Format hardware/behavioral status for prompt
-    participants_status = ""
-    for p_id, data in participants.items():
-        webcam_str = "ON" if data.get("webcam", True) else "OFF"
-        share_str = "ON" if data.get("screen_sharing", False) else "OFF"
-        participants_status += f"- Participant '{data.get('display_name')}' (ID: {p_id[:4]}, Role: {data.get('role')}): Webcam={webcam_str}, Screen Share={share_str}\n"
 
     # Get cached score and explanation
     cached_score = state.get("face_match_score", 0)
@@ -143,9 +115,11 @@ async def llm_dialogue_analysis(state: AgentState) -> dict:
                     threshold = verify_res.get("threshold", 0.593)
                     
                     if distance < threshold:
-                        face_score = int(100 - (distance / threshold) * 40)
+                        # Scale verified matches between [70, 100] to satisfy the frontend's >= 70 threshold
+                        face_score = int(100 - (distance / threshold) * 30)
                     else:
-                        face_score = int(max(0, 50 - ((distance - threshold) / (1.0 - threshold)) * 50))
+                        # Scale mismatches between [0, 69]
+                        face_score = int(max(0, 69 - ((distance - threshold) / (1.0 - threshold)) * 69))
                         
                     if is_verified:
                         face_explanation = f"Local SFace face verification passed (Distance: {distance:.3f}, Threshold: {threshold:.3f}). Verified matching candidate."
@@ -154,6 +128,43 @@ async def llm_dialogue_analysis(state: AgentState) -> dict:
                 except Exception as e:
                     print(f"Error performing local DeepFace SFace verification: {e}", flush=True)
                     face_explanation = f"Error running local face verification: {e}"
+
+    # If transcript is empty, return early but WITH computed face verification results!
+    if not transcript:
+        cand_name = "Candidate"
+        best_sim = -1
+        for p_id, data in participants.items():
+            if data.get("role") == "observer":
+                continue
+            sim = fuzz.token_sort_ratio(data.get("display_name", ""), metadata.get("scheduled_candidate", ""))
+            if sim > best_sim:
+                best_sim = sim
+                cand_name = data.get("display_name", "Candidate")
+
+        return {
+            "signals": {**state.get("signals", {}), "dialogue_analysis": {
+                "suspected_candidate_name": cand_name,
+                "dialogue_signal_strength": 50,
+                "analysis": "No dialogue transcribed yet.",
+                "face_match_score": face_score,
+                "face_match_explanation": face_explanation
+            }},
+            "analysis_history": ["No transcript dialogue analyzed yet (empty transcript). Local face verification completed."]
+        }
+
+    # Format transcript text showing name only
+    transcript_text = ""
+    for msg in transcript:
+        name = msg.get("display_name", "Unknown")
+        text = msg.get("text", "")
+        transcript_text += f"{name}: {text}\n"
+
+    # Format hardware/behavioral status for prompt
+    participants_status = ""
+    for p_id, data in participants.items():
+        webcam_str = "ON" if data.get("webcam", True) else "OFF"
+        share_str = "ON" if data.get("screen_sharing", False) else "OFF"
+        participants_status += f"- Participant '{data.get('display_name')}' (ID: {p_id[:4]}, Role: {data.get('role')}): Webcam={webcam_str}, Screen Share={share_str}\n"
 
     # Construct prompt text
     prompt_text = ANALYZER_SYSTEM_PROMPT.format(
@@ -239,10 +250,14 @@ async def llm_dialogue_analysis(state: AgentState) -> dict:
         
         # Find suspected candidate ID to construct a smart heuristic prediction
         suspected_id = ""
+        best_sim = -1
         for p_id, p in participants.items():
-            if p.get("role") == "candidate":
+            if p.get("role") == "observer":
+                continue
+            sim = fuzz.token_sort_ratio(p.get("display_name", ""), metadata.get("scheduled_candidate", ""))
+            if sim > best_sim:
+                best_sim = sim
                 suspected_id = p_id
-                break
                 
         has_cam = False
         has_share = False
@@ -258,7 +273,7 @@ async def llm_dialogue_analysis(state: AgentState) -> dict:
         
         return {
             "signals": {**state.get("signals", {}), "dialogue_analysis": {
-                "suspected_candidate_role": "candidate",
+                "suspected_candidate_name": cand_name,
                 "dialogue_signal_strength": dialogue_strength,
                 "analysis": f"[OFFLINE MODE] {dialogue_analysis}",
                 "face_match_score": face_score,
@@ -277,19 +292,19 @@ def fuse_signals(state: AgentState) -> dict:
     scheduled_cand = metadata.get("scheduled_candidate", "")
     missing_metadata = not scheduled_cand
     
-    # Filter candidates
-    candidate_ids = [p_id for p_id, p in participants.items() if p.get("role") == "candidate"]
+    # Filter candidate candidates (anyone who is not a shadow observer)
+    candidate_ids = [p_id for p_id, p in participants.items() if p.get("role") != "observer"]
     if not candidate_ids:
         return {
             "identified_candidate_role": "candidate",
             "identified_candidate_id": "",
             "confidence_score": 50,
-            "explanation": "Waiting for candidate to connect to the session...",
+            "explanation": "Waiting for participants to connect to the session...",
             "face_match_score": 0,
             "face_match_explanation": "Camera offline.",
             "voice_match_score": 0,
             "voice_match_explanation": "Microphone muted.",
-            "analysis_history": ["No active candidate connection found."]
+            "analysis_history": ["No active connections found."]
         }
 
     scores = {p_id: 0.0 for p_id in participants}
@@ -299,7 +314,10 @@ def fuse_signals(state: AgentState) -> dict:
     total_duration = sum(data.get("speaking_duration", 0) for data in participants.values())
     
     # Retrieve biometric face match results
-    face_score = diag_analysis.get("face_match_score", 0)
+    try:
+        face_score = float(diag_analysis.get("face_match_score", 0))
+    except Exception:
+        face_score = 0.0
     face_explanation = diag_analysis.get("face_match_explanation", "Camera offline.")
     
     # We have an active face check if both the baseline photo and the candidate webcam frame are present
@@ -307,7 +325,7 @@ def fuse_signals(state: AgentState) -> dict:
     baseline_photo = metadata.get("baseline_photo", "")
     has_cand_frame = False
     for p in participants.values():
-        if p.get("role") == "candidate" and p.get("latest_frame"):
+        if p.get("role") != "observer" and p.get("latest_frame"):
             has_cand_frame = True
             break
     if baseline_photo and has_cand_frame:
@@ -389,17 +407,22 @@ def fuse_signals(state: AgentState) -> dict:
             reasons.append(f"Participant '{disp_name}' active screen share detected (+15 boost).")
 
     # Signal 5: LLM dialogue semantics
-    llm_suspect_role = diag_analysis.get("suspected_candidate_role", "candidate")
-    llm_strength = diag_analysis.get("dialogue_signal_strength", 50) / 100.0
+    llm_suspect_name = diag_analysis.get("suspected_candidate_name", "")
+    try:
+        llm_strength = float(diag_analysis.get("dialogue_signal_strength", 50)) / 100.0
+    except Exception:
+        llm_strength = 0.5
     llm_score = llm_strength * weight_llm
     
-    for p_id, p_signals in list(signals.items()):
-        if p_id == "dialogue_analysis" or p_signals.get("role") == "observer":
-            continue
-        if p_signals.get("role") == llm_suspect_role:
-            scores[p_id] += llm_score
+    if llm_suspect_name:
+        for p_id, p_signals in list(signals.items()):
+            if p_id == "dialogue_analysis" or p_signals.get("role") == "observer":
+                continue
+            disp_name = p_signals.get("display_name", "")
+            sim = fuzz.token_sort_ratio(disp_name, llm_suspect_name) / 100.0
+            scores[p_id] += sim * llm_score
             
-    reasons.append(f"Gemini Speech Analysis suspects candidate channel is '{llm_suspect_role}' ({int(llm_strength * 100)}% strength). Rationale: {diag_analysis.get('analysis', '')}")
+    reasons.append(f"Gemini Speech Analysis suspects candidate channel is '{llm_suspect_name}' ({int(llm_strength * 100)}% strength). Rationale: {diag_analysis.get('analysis', '')}")
 
     # Signal 6: Biometric Face match score (25% weight if active)
     if has_face_check:

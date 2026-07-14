@@ -25,7 +25,7 @@ Facial Biometric Comparison (If images are provided):
 
 You must respond in JSON format with the following keys:
 - "analysis": Your reasoning based on the transcript's dialogue context and behavioral states.
-- "suspected_candidate_role": "interviewer" or "candidate" (the channel role currently speaking).
+- "suspected_candidate_name": The exact display name of the participant from the transcript who you suspect is the actual interview candidate.
 - "dialogue_signal_strength": A score from 0 to 100 indicating how strongly the conversation text points to your choice.
 - "face_match_score": A score from 0 to 100. Set to 100 if the faces match perfectly. Set to 0 if camera is disabled/images are missing. Set below 50 if there is a mismatch (potential proxy candidate/fraud).
 - "face_match_explanation": A verbal logs explaining face trait verification details.

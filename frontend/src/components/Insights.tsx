@@ -174,8 +174,16 @@ export function Insights({
 
       <div className="explanation-section">
         <span className="explanation-header">AI Reasoning & Signal Rationale:</span>
-        <div className="explanation-text">
-          {analysis.explanation}
+        <div className="explanation-text" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {analysis.explanation ? (
+            analysis.explanation.split(' | ').map((line, idx) => (
+              <div key={idx} style={{ borderBottom: idx < analysis.explanation.split(' | ').length - 1 ? '1px dashed rgba(255,255,255,0.06)' : 'none', paddingBottom: '6px' }}>
+                {line}
+              </div>
+            ))
+          ) : (
+            <span>No analysis rationale generated yet.</span>
+          )}
         </div>
       </div>
 

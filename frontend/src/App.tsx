@@ -8,8 +8,8 @@ import { Users, Play } from 'lucide-react';
 
 export default function App() {
   const [isJoined, setIsJoined] = useState(false);
-  const [userRole, setUserRole] = useState<'interviewer' | 'candidate' | 'observer'>('interviewer');
-  const [userName, setUserName] = useState('Alice Smith');
+  const [userRole, setUserRole] = useState<'interviewer' | 'candidate' | 'observer' | 'participant'>('participant');
+  const [userName, setUserName] = useState('');
 
   // Central transcripts, connected participants registry, and analysis states
   const [viewMode, setViewMode] = useState<'split' | 'interviewer' | 'candidate'>('split');
@@ -172,52 +172,19 @@ export default function App() {
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Select Your Meeting Role:
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-              <button 
-                type="button"
-                className={`btn ${userRole === 'interviewer' ? 'btn-primary' : ''}`}
-                style={{ justifyContent: 'center' }}
-                onClick={() => {
-                  setUserRole('interviewer');
-                  setUserName('Alice Smith');
-                }}
-              >
-                Interviewer
-              </button>
-              <button 
-                type="button"
-                className={`btn ${userRole === 'candidate' ? 'btn-primary' : ''}`}
-                style={{ justifyContent: 'center' }}
-                onClick={() => {
-                  setUserRole('candidate');
-                  setUserName('MacBook Pro');
-                }}
-              >
-                Candidate
-              </button>
-              <button 
-                type="button"
-                className={`btn ${userRole === 'observer' ? 'btn-primary' : ''}`}
-                style={{ justifyContent: 'center' }}
-                onClick={() => {
-                  setUserRole('observer');
-                  setUserName('Shadow Observer');
-                }}
-              >
-                Observer
-              </button>
-            </div>
-          </div>
-
           <button 
             type="button"
             className="btn btn-primary"
             style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px', marginTop: '10px' }}
-            onClick={() => setIsJoined(true)}
+            onClick={() => {
+              if (!userName.trim()) return;
+              let role: 'interviewer' | 'candidate' | 'observer' | 'participant' = 'participant';
+              if (userName.toLowerCase().includes('observer') || userName.toLowerCase().includes('recruiter')) {
+                role = 'observer';
+              }
+              setUserRole(role);
+              setIsJoined(true);
+            }}
           >
             <Play size={18} /> Join Meeting Session
           </button>

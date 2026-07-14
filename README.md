@@ -69,6 +69,42 @@ graph TD
     Fuser --> Out1 & Out2 & Out3 & Out4
 ```
 
+### System Architecture Explanation
+
+The prototype consists of a real-time React + TypeScript frontend dashboard and a FastAPI backend powered by a LangGraph multi-signal fusion workflow. Here is how the system processes data end-to-end:
+
+#### A. Client Connection & Live Data Streaming
+1. **Onboarding UI:** When a user enters their name, they join the session as a generic `participant` (or `observer` if their name matches shadow recruiter parameters). No pre-declared roles (such as Candidate or Interviewer) are selected.
+
+2. **WebSocket Connection:** The frontend establishes a persistent WebSocket connection to the backend (`/ws/transcribe`), passing the participant ID and display name.
+3. **Webcam Stream:** Any active participant streams base64-encoded webcam snapshots over the WebSocket connection to the backend periodically (every 8 seconds) for biometric verification.
+
+4. **Speech-to-Text Stream:** The frontend records audio, processes it via the Web Speech API (or live transcription client), and streams speaker-attributed final transcript text segments to the backend.
+
+#### B. Signal Extraction & Processing Layer
+Upon receiving webcam frames or final transcript updates, the backend triggers the **LangGraph identity verification workflow**:
+
+1. **Local Face Verification (Biometrics):** 
+   - A local OpenCV **SFace** model (configured via `DeepFace`) compares the live webcam frame of the suspected candidate against the on-file baseline photo (`john_doe_profile.png`).
+   - SFace calculates the cosine distance on the CPU (under 1.2 seconds latency). If the distance is below `0.593`, SFace verifies the match.
+   - The raw distance is mathematically mapped to a score between `70%` and `100%` for successful matches, or `0%` and `69%` for mismatches, aligning with the frontend's status badge.
+
+2. **Scheduled Name Similarity:** Uses fuzzy comparison (`Jaro-Winkler` similarity) to match the display name of each participant to the scheduled candidate name and interviewer invite lists.
+
+3. **Dialogue Semantics (LLM Context):** 
+   - The transcript is processed by `llama-3.3-70b-versatile` (via Groq API).
+   - The LLM parses the dialogue to identify who is answering technical questions and explaining code (identifying the candidate) vs who is introducing the company or asking questions (identifying the interviewer).
+   - This text-only approach uses under 500 tokens per request, avoiding token rate limits.
+   
+4. **Speaking Duration & Screen Share Tracking:** Tracks speaking clocks and monitors screen share toggle events.
+
+#### C. Multi-Signal Fuser Node & Output Broadcasting
+1. **Agent Fuser:** The LangGraph fuser node combines the normalized outputs of all 5 weak signals and offset rules to calculate a final confidence score (0-100%).
+2. **Dynamic Candidate Promotion:** The participant with the highest fuser score is automatically identified as the **Candidate** (`identified_candidate_id`), and all other active participants are marked as **Interviewers**.
+3. **Role Re-assignment:** The backend updates participant roles dynamically in-memory.
+4. **State Broadcast:** The backend broadcasts the updated participants registry, confidence score, and pipe-separated reason rationales to all connected clients.
+5. **Dynamic UI Rendering:** The frontend receives the broadcast, dynamically moving the identified candidate to the **Candidate Panel** (where their local webcam is actively verified) and interviewers to the **Interviewer Panel** automatically.
+
 ---
 
 ## 2. Multi-Signal Fusion Weights Breakdown

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 interface UseSpeechWSProps {
-  role: 'interviewer' | 'candidate' | 'observer';
+  role: 'interviewer' | 'candidate' | 'observer' | 'participant';
   displayName: string;
   onMessage: (data: any) => void;
   isJoined?: boolean;
