@@ -2,6 +2,10 @@
 
 Sherlock is an AI-powered candidate identification system designed for live video calls (Google Meet, Microsoft Teams, and Zoom). By fusing physical indicators, facial biometrics, audio liveness, and LLM dialogue semantics, Sherlock automatically identifies the correct interview candidate in real time and detects potential proxy interviewers or voice clone fraud.
 
+### 🎥 Walkthrough & Demo Videos
+* **Candidate Identification & Face Verification Demo:** [Watch Video 1 (Google Drive)](https://drive.google.com/file/d/1cgjLqQtZ_rsLtSNU--ERx7H4ikvZfMqp/view?usp=drive_link)
+* **Real-time Signal Fusion & Edge Case Evaluation:** [Watch Video 2 (Google Drive)](https://drive.google.com/file/d/16zEfUmGkN21AxCa7I2gSoaYRqSXVdj9F/view?usp=drive_link)
+
 ---
 
 ## 1. System Architecture & Fusion Pipeline
