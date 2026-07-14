@@ -20,11 +20,11 @@ graph TD
 
     %% Signal Processing Nodes
     subgraph Processing ["2. Signal Extraction Nodes"]
-        E["Gemini Vision Matcher"]
+        E["Local DeepFace SFace Matcher"]
         F["Acoustic Liveness & Lip-Sync"]
         G["Fuzzy Jaro-Winkler Compare"]
         H["Speaking Duration Clock"]
-        I["Gemini Dialogue Semantic Audit"]
+        I["Gemini/Groq Dialogue Semantic Audit"]
     end
 
     %% Mapping inputs to processing
@@ -75,9 +75,9 @@ graph TD
 
 To ensure robust results, Sherlock fuses **5 distinct weak signals**:
 
-* **Biometric Face Verification (25% weight):** Gemini Vision compares the live webcam frame of the suspected candidate against the baseline profile image on file.
+* **Biometric Face Verification (25% weight):** A local OpenCV SFace model via DeepFace compares the live webcam frame of the suspected candidate against the baseline profile image on file.
 * **Scheduled Name Match (25% weight):** Uses fuzzy comparison (Jaro-Winkler token sort ratio) to compare connected display names to the scheduled candidate name.
-* **Dialogue Semantics (LLM Context - 20% weight):** Gemini analyzes the transcript. The speaker answering technical details, describing code, and explaining experiences is attributed candidate points.
+* **Dialogue Semantics (LLM Context - 20% weight):** The LLM analyzes the transcript text-only. The speaker answering technical details, describing code, and explaining experiences is attributed candidate points.
 * **Audio Liveness & Lip-Sync (20% weight):** Audits whether the audio is a real human voice vs an AI clone, and checks if vocal spikes align with the webcam lip movements to detect off-camera proxy speakers.
 * **Speaking Duration Ratio (10% weight):** Calculates the percentage of active talk ratio per participant connection.
 

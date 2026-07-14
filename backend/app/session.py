@@ -108,6 +108,8 @@ class InterviewSession:
         if participant_id in self.participants:
             self.participants[participant_id]["webcam"] = webcam
             self.participants[participant_id]["screen_sharing"] = screen_sharing
+            if not webcam:
+                self.participants[participant_id]["latest_frame"] = ""
 
     def update_name(self, participant_id: str, display_name: str):
         if participant_id in self.participants:
